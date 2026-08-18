@@ -109,8 +109,9 @@ textarea{resize:vertical;min-height:56px}
 .sl-min{font-size:11px;color:var(--txm);flex-shrink:0}
 /* number input row */
 .num-row{display:flex;align-items:center;gap:8px}
-.num-row input{max-width:150px;text-align:center;font-weight:700;font-size:16px}
-.num-unit{font-size:13px;color:var(--txm)}
+.num-row input{max-width:150px;min-width:0;text-align:center;font-weight:700;font-size:16px}
+.num-unit{font-size:13px;color:var(--txm);flex-shrink:0}
+.num-pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 
 /* tri buttons */
 .tri{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
@@ -1268,23 +1269,27 @@ function renderToday(){
     <div class="card">
       <div class="card-title"><span class="dot" style="background:var(--g)"></span>生理状态</div>
       <div class="cs">
-        <div class="card-title" style="margin-bottom:6px">睡眠时长</div>
-        <div class="num-row">
-          <input id="in-sleep" type="number" inputmode="decimal" step="0.5" min="0" max="24" value="${log.sleep.hoursSlept}"
-            oninput="setF('sleep.hoursSlept',parseFloat(this.value)||0)"/>
-          <span class="num-unit">小时</span>
+        <div class="num-pair">
+          <div>
+            <div class="card-title" style="margin-bottom:6px">睡眠时长</div>
+            <div class="num-row">
+              <input id="in-sleep" type="number" inputmode="decimal" step="0.5" min="0" max="24" value="${log.sleep.hoursSlept}"
+                oninput="setF('sleep.hoursSlept',parseFloat(this.value)||0)"/>
+              <span class="num-unit">小时</span>
+            </div>
+          </div>
+          <div>
+            <div class="card-title" style="margin-bottom:6px">体重</div>
+            <div class="num-row">
+              <input id="in-wt" type="number" inputmode="decimal" step="0.1" min="0" max="300" value="${log.weight!==null?log.weight:''}" placeholder="留空不记录"
+                oninput="const v=this.value;setF('weight',v===''?null:(parseFloat(v)||null))"/>
+              <span class="num-unit">kg</span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="cs"><div class="card-title" style="margin-bottom:6px">睡眠质量</div><div class="tri" id="sq">${sqBtns}</div></div>
       <div class="cs"><div class="card-title" style="margin-bottom:6px">今日精力</div><div class="tri" id="en">${enBtns}</div></div>
-      <div class="cs">
-        <div class="card-title" style="margin-bottom:6px">体重</div>
-        <div class="num-row">
-          <input id="in-wt" type="number" inputmode="decimal" step="0.1" min="0" max="300" value="${log.weight!==null?log.weight:''}" placeholder="留空不记录"
-            oninput="const v=this.value;setF('weight',v===''?null:(parseFloat(v)||null))"/>
-          <span class="num-unit">kg</span>
-        </div>
-      </div>
       <div class="cs">
         <div class="card-title" style="margin-bottom:6px">今日标签</div>
         <div class="tag-cloud">${tagChips}<span class="chip-add" onclick="openAddTag()">＋ 新增</span></div>
