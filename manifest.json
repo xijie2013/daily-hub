@@ -1,0 +1,19 @@
+{
+  "name": "Daily Hub · 每日中枢",
+  "short_name": "DailyHub",
+  "description": "任务看板 + 生理与心理状态追踪，GitHub Gist 云同步",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f4f8",
+  "theme_color": "#667eea",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
