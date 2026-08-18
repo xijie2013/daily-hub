@@ -1226,16 +1226,6 @@ function toggleTag(id,el){
   el.style.background=on?t.color:'';
   touchToday();
 }
-function toggleSupp(id,el){
-  const log=todayLog();
-  log.supplements[id]=!log.supplements[id];
-  el.classList.toggle('on',!!log.supplements[id]);
-  touchToday();
-}
-function suppRate(log){
-  if(!data.supplements.length)return null;
-  return Math.round(data.supplements.filter(s=>log.supplements&&log.supplements[s.id]).length/data.supplements.length*100);
-}
 function renderToday(){
   const log=todayLog();
   const dt=new Date();
@@ -1266,13 +1256,6 @@ function renderToday(){
     const on=log.tags.includes(t.id);
     return `<span class="chip${on?' on':''}" style="${on?'background:'+t.color+';':''}" onclick="toggleTag(${t.id},this)">${t.icon} ${esc(t.name)}</span>`;
   }).join('');
-  const suppRows=data.supplements.map(s=>{
-    const ch=log.supplements[s.id];
-    return `<div class="si${ch?' on':''}" onclick="toggleSupp(${s.id},this)">
-      <div class="sc"></div><div class="si-info"><div class="si-name">${esc(s.name)}</div><div class="si-dose">${esc(s.dose)} ${esc(s.unit)}</div></div>
-      <span class="si-cat">${esc(s.category)}</span></div>`;
-  }).join('');
-
   document.getElementById('today-c').innerHTML=`
     <div class="banner">
       <div><div class="b-big">${dt.getMonth()+1}月 ${dt.getDate()}日</div>
@@ -1312,7 +1295,6 @@ function renderToday(){
         <div class="card-title" style="margin-bottom:6px">今日标签</div>
         <div class="tag-cloud">${tagChips}<span class="chip-add" onclick="openAddTag()">＋ 新增</span></div>
       </div>
-      ${data.supplements.length?`<div class="cs"><div class="card-title" style="margin-bottom:6px">今日补剂</div><div class="sl-list">${suppRows}</div></div>`:''}
     </div>
     <div class="card">
       <div class="card-title"><span class="dot" style="background:var(--pri)"></span>心理状态</div>
@@ -1370,7 +1352,6 @@ function renderLogs(){
   }
   const rows=sorted.map(log=>{
     const sq=log.sleep.quality,en=log.energy.level;
-    const rate=suppRate(log);
     const wtag=log.weight?`<span class="lt" style="background:#f3e5f5;color:#7b1fa2">⚖️ ${log.weight}kg</span>`:'';
     const ttags=(log.tags||[]).map(tid=>{const t=data.tagDefs.find(x=>x.id===tid);return t?`<span class="lt" style="background:${t.color}22;color:${t.color}">${t.icon} ${esc(t.name)}</span>`:''}).join('');
     return `<div class="li" onclick="openDet(${log.id})">
@@ -1379,7 +1360,6 @@ function renderLogs(){
         <span class="lt tg">🌙 ${log.sleep.hoursSlept}h · ${sq?SLQ[sq]:'—'}</span>
         <span class="lt to">⚡ ${en?ENL[en]:'—'}</span>
         ${psyBadges(log)}
-        ${rate!==null?`<span class="lt tb2">💊 ${rate}%</span>`:''}
         ${wtag}${ttags}
       </div>
       ${log.journal?`<div class="li-journal">📝 ${esc(log.journal)}</div>`:''}
@@ -1392,11 +1372,6 @@ function openDet(id){
   curDetId=id;
   document.getElementById('det-title').textContent=log.date;
   const sq=log.sleep.quality,en=log.energy.level;
-  const suppRows=data.supplements.map(s=>{
-    const tk=log.supplements&&log.supplements[s.id];
-    return `<div class="tr"><span class="tr-l">${esc(s.name)}</span>
-      <span class="tr-v" style="color:${tk?'var(--g)':'var(--txm)'}">${tk?'✓ 已服':'✗ 未服'}</span></div>`;
-  }).join('')||'<p style="font-size:12px;color:var(--txm)">无补剂记录</p>';
   const tagList=(log.tags||[]).map(tid=>{const t=data.tagDefs.find(x=>x.id===tid);return t?`<span class="chip on" style="background:${t.color};font-size:12px">${t.icon} ${esc(t.name)}</span>`:''}).join('')||'<span style="font-size:12px;color:var(--txm)">无</span>';
   const psyRow=(name,val,def)=>`<div class="tr"><span class="tr-l">${name}</span>
     <span class="tr-v">${val?def.items[val-1][1]+' '+def.items[val-1][2]+'（'+val+'/5）':'未记录'}</span></div>`;
@@ -1417,7 +1392,6 @@ function openDet(id){
     </div>
     <div class="card"><div class="card-title"><span class="dot" style="background:var(--b)"></span>标签</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px">${tagList}</div></div>
-    ${data.supplements.length?`<div class="card"><div class="card-title"><span class="dot" style="background:var(--b)"></span>补剂</div>${suppRows}</div>`:''}
     <button class="btn btn-d" style="width:100%;margin-top:6px" onclick="delLog(${log.id})">🗑 删除此记录</button>`;
   document.getElementById('det').classList.add('open');
 }
@@ -1449,11 +1423,6 @@ function logFormHtml(log,pfx){
     const on=log&&(log.tags||[]).includes(t.id);
     return `<span class="chip${on?' on':''}" data-tid="${t.id}" style="${on?'background:'+t.color+';':''}" onclick="toggleSheetTag(${t.id},this)">${t.icon} ${esc(t.name)}</span>`;
   }).join('');
-  const suppRows=data.supplements.map(s=>{
-    const ch=log&&log.supplements&&log.supplements[s.id];
-    return `<div class="si${ch?' on':''}" data-sid="${s.id}" onclick="this.classList.toggle('on')">
-      <div class="sc"></div><div class="si-info"><div class="si-name">${esc(s.name)}</div><div class="si-dose">${esc(s.dose)}</div></div></div>`;
-  }).join('');
   const sVal=log?log.sleep.hoursSlept:7;
   return `
     <div class="field"><label>睡眠时长（小时）</label>
@@ -1469,8 +1438,7 @@ function logFormHtml(log,pfx){
     <div class="field"><label>压力 / 焦虑</label>${lv5Sheet(pfx+'-stress',log?log.stress:0,STRESS_DEF)}</div>
     <div class="field"><label>专注 / 效率</label>${lv5Sheet(pfx+'-focus',log?log.focus:0,FOCUS_DEF)}</div>
     <div class="field"><label>心情日记</label><textarea id="${pfx}-jr" rows="2" placeholder="可选">${esc(log?log.journal:'')}</textarea></div>
-    ${tagChips?`<div class="field"><label>标签</label><div class="tag-cloud">${tagChips}</div></div>`:''}
-    ${suppRows?`<div class="field"><label>补剂</label><div class="sl-list">${suppRows}</div></div>`:''}`;
+    ${tagChips?`<div class="field"><label>标签</label><div class="tag-cloud">${tagChips}</div></div>`:''}`;
 }
 function setSheetTri(gId,val,which){
   const g=document.getElementById(gId);if(!g)return;
@@ -1495,9 +1463,7 @@ function readLogForm(pfx,into){
   into.focus=lv5SheetVal(pfx+'-focus');
   into.journal=document.getElementById(pfx+'-jr').value.trim();
   into.tags=[...document.querySelectorAll('#m-body .chip.on[data-tid]')].map(el=>parseInt(el.dataset.tid));
-  const supps={};
-  document.querySelectorAll('#m-body .si.on[data-sid]').forEach(el=>supps[parseInt(el.dataset.sid)]=true);
-  into.supplements=supps;
+  if(!into.supplements)into.supplements={};
   return into;
 }
 function openAddPastLog(){
