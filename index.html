@@ -1701,7 +1701,7 @@ function renderMore(){
 function labSectionHtml(){
   const sorted=[...data.labResults].sort((a,b)=>b.date.localeCompare(a.date));
   const addBtn='<button class="btn btn-s" style="width:100%;margin-bottom:11px" onclick="openAddLab()">＋ 添加检测记录</button>';
-  if(!sorted.length)return addBtn+'<div class="empty"><div class="ei">🧪</div><p>还没有检测记录<br>添加甲状腺功能报告</p></div>';
+  if(!sorted.length)return addBtn+'<div class="empty"><div class="ei">🧪</div><p>还没有检测记录</p></div>';
   return addBtn+sorted.map(lab=>{
     const vals=Object.entries(lab.values||{}).map(([k,v])=>{
       const out=v.refLow!==undefined&&(v.value<v.refLow||v.value>v.refHigh);
