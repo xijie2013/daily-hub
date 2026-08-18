@@ -107,6 +107,10 @@ textarea{resize:vertical;min-height:56px}
 .sl-wrap input[type=range]{flex:1;accent-color:var(--g);cursor:pointer;padding:0;border:none}
 .sl-val{font-size:15px;font-weight:700;color:var(--g);min-width:44px;text-align:right;flex-shrink:0}
 .sl-min{font-size:11px;color:var(--txm);flex-shrink:0}
+/* number input row */
+.num-row{display:flex;align-items:center;gap:8px}
+.num-row input{max-width:150px;text-align:center;font-weight:700;font-size:16px}
+.num-unit{font-size:13px;color:var(--txm)}
 
 /* tri buttons */
 .tri{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
@@ -1193,11 +1197,6 @@ async function saveTodayNow(){
   if(log.sleep.quality===0||log.energy.level===0){toast('请先选择睡眠质量和精力状态');return}
   await flushSave();renderToday();
 }
-function clearWt(){
-  setF('weight',null);
-  const sl=document.getElementById('sl-wt');if(sl)sl.style.opacity='.35';
-  const v=document.getElementById('wtv');if(v)v.textContent='— kg';
-}
 function toggleTag(id,el){
   const log=todayLog();
   const i=log.tags.indexOf(id);
@@ -1244,9 +1243,6 @@ function renderToday(){
 
   const sqBtns=[1,2,3].map(v=>`<button class="tb ${log.sleep.quality===v?SLC[v]:''}" onclick="setTri('sq',${v},'sleep.quality')">${SLQ[v]}</button>`).join('');
   const enBtns=[1,2,3].map(v=>`<button class="tb ${log.energy.level===v?ENC[v]:''}" onclick="setTri('en',${v},'energy.level')">${ENL[v]}</button>`).join('');
-  const wtMid=Math.round((slRanges.wtMin+slRanges.wtMax)/2*2)/2;
-  const wVal=log.weight!==null?Math.max(slRanges.wtMin,Math.min(slRanges.wtMax,log.weight)):wtMid;
-  const wDisp=log.weight!==null?log.weight+' kg':'— kg';
   const tagChips=data.tagDefs.map(t=>{
     const on=log.tags.includes(t.id);
     return `<span class="chip${on?' on':''}" style="${on?'background:'+t.color+';':''}" onclick="toggleTag(${t.id},this)">${t.icon} ${esc(t.name)}</span>`;
@@ -1273,25 +1269,21 @@ function renderToday(){
       <div class="card-title"><span class="dot" style="background:var(--g)"></span>生理状态</div>
       <div class="cs">
         <div class="card-title" style="margin-bottom:6px">睡眠时长</div>
-        <div class="sl-wrap">
-          <span class="sl-min">${slRanges.sleepMin}h</span>
-          <input id="sl-sleep" type="range" min="${slRanges.sleepMin}" max="${slRanges.sleepMax}" step="0.5" value="${Math.max(slRanges.sleepMin,Math.min(slRanges.sleepMax,log.sleep.hoursSlept))}"
-            oninput="document.getElementById('slv').textContent=this.value+'h';setF('sleep.hoursSlept',parseFloat(this.value))"/>
-          <span class="sl-val" id="slv">${log.sleep.hoursSlept}h</span>
+        <div class="num-row">
+          <input id="in-sleep" type="number" inputmode="decimal" step="0.5" min="0" max="24" value="${log.sleep.hoursSlept}"
+            oninput="setF('sleep.hoursSlept',parseFloat(this.value)||0)"/>
+          <span class="num-unit">小时</span>
         </div>
       </div>
       <div class="cs"><div class="card-title" style="margin-bottom:6px">睡眠质量</div><div class="tri" id="sq">${sqBtns}</div></div>
       <div class="cs"><div class="card-title" style="margin-bottom:6px">今日精力</div><div class="tri" id="en">${enBtns}</div></div>
       <div class="cs">
         <div class="card-title" style="margin-bottom:6px">体重</div>
-        <div class="sl-wrap">
-          <span class="sl-min">${slRanges.wtMin}</span>
-          <input id="sl-wt" type="range" min="${slRanges.wtMin}" max="${slRanges.wtMax}" step="0.5" value="${wVal}"
-            style="${log.weight===null?'opacity:.35':''}"
-            oninput="document.getElementById('wtv').textContent=this.value+' kg';setF('weight',parseFloat(this.value));this.style.opacity='1'"/>
-          <span class="sl-val" id="wtv">${wDisp}</span>
+        <div class="num-row">
+          <input id="in-wt" type="number" inputmode="decimal" step="0.1" min="0" max="300" value="${log.weight!==null?log.weight:''}" placeholder="留空不记录"
+            oninput="const v=this.value;setF('weight',v===''?null:(parseFloat(v)||null))"/>
+          <span class="num-unit">kg</span>
         </div>
-        <button class="btn btn-sm btn-s" style="margin-top:6px;font-size:11px" onclick="clearWt()">清除体重</button>
       </div>
       <div class="cs">
         <div class="card-title" style="margin-bottom:6px">今日标签</div>
@@ -1439,14 +1431,12 @@ function logFormHtml(log,pfx){
     return `<div class="si${ch?' on':''}" data-sid="${s.id}" onclick="this.classList.toggle('on')">
       <div class="sc"></div><div class="si-info"><div class="si-name">${esc(s.name)}</div><div class="si-dose">${esc(s.dose)}</div></div></div>`;
   }).join('');
-  const sVal=log?Math.max(slRanges.sleepMin,Math.min(slRanges.sleepMax,log.sleep.hoursSlept)):7;
+  const sVal=log?log.sleep.hoursSlept:7;
   return `
-    <div class="field"><label>睡眠时长</label>
-      <div class="sl-wrap">
-        <span class="sl-min">${slRanges.sleepMin}h</span>
-        <input id="${pfx}-sl" type="range" min="${slRanges.sleepMin}" max="${slRanges.sleepMax}" step="0.5" value="${sVal}"
-          oninput="document.getElementById('${pfx}-slv').textContent=this.value+'h'"/>
-        <span class="sl-val" id="${pfx}-slv">${sVal}h</span>
+    <div class="field"><label>睡眠时长（小时）</label>
+      <div class="num-row">
+        <input id="${pfx}-sl" type="number" inputmode="decimal" step="0.5" min="0" max="24" value="${sVal}"/>
+        <span class="num-unit">小时</span>
       </div></div>
     <div class="field"><label>睡眠质量</label><div class="tri" id="${pfx}-sq">${sqBtns}</div></div>
     <div class="field"><label>精力</label><div class="tri" id="${pfx}-en">${enBtns}</div></div>
@@ -1473,7 +1463,7 @@ function readLogForm(pfx,into){
   let sq=0,en=0;
   document.querySelectorAll('#'+pfx+'-sq .tb').forEach((b,i)=>{if(b.classList.contains('bad')||b.classList.contains('ok')||b.classList.contains('good'))sq=i+1});
   document.querySelectorAll('#'+pfx+'-en .tb').forEach((b,i)=>{if(b.classList.contains('bad')||b.classList.contains('ok')||b.classList.contains('good'))en=i+1});
-  into.sleep={hoursSlept:parseFloat(document.getElementById(pfx+'-sl').value),quality:sq};
+  into.sleep={hoursSlept:parseFloat(document.getElementById(pfx+'-sl').value)||0,quality:sq};
   into.energy={level:en};
   const wtStr=document.getElementById(pfx+'-wt').value;
   into.weight=wtStr?parseFloat(wtStr):null;
@@ -1824,16 +1814,6 @@ function settingsSectionHtml(){
     <button class="btn btn-s" style="width:100%;margin-top:10px" onclick="reloadFromCloud()">🔄 立即从云端重新加载</button>
   </div>
   <div class="card">
-    <div class="card-title"><span class="dot" style="background:#9c27b0"></span>📏 滑块范围</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="field"><label>睡眠最小 (h)</label><input type="number" id="sr-smin" value="${slRanges.sleepMin}" min="0" max="11" step="0.5"/></div>
-      <div class="field"><label>睡眠最大 (h)</label><input type="number" id="sr-smax" value="${slRanges.sleepMax}" min="1" max="24" step="0.5"/></div>
-      <div class="field"><label>体重最小 (kg)</label><input type="number" id="sr-wmin" value="${slRanges.wtMin}" min="20" max="200" step="0.5"/></div>
-      <div class="field"><label>体重最大 (kg)</label><input type="number" id="sr-wmax" value="${slRanges.wtMax}" min="20" max="300" step="0.5"/></div>
-    </div>
-    <button class="btn btn-s" style="width:100%" onclick="applyRanges()">保存范围</button>
-  </div>
-  <div class="card">
     <div class="card-title"><span class="dot" style="background:var(--o)"></span>🔑 凭据</div>
     <p class="hint" style="margin-bottom:10px">凭据以 PIN 加密内置在页面里，本机解锁一次即可。若更换了 token（regenerate），可在下方手动覆盖，或让 Claude 重新生成加密页面。</p>
     <div class="field"><label>Gist ID</label><input type="text" id="cg-gid" value="${esc(CREDS.gistId)}" spellcheck="false"/></div>
@@ -1847,16 +1827,6 @@ function settingsSectionHtml(){
     · 旧数据备份仍保留：同一 gist 里的 kanban-data.json 和旧 health gist 的 health-data.json（迁移后不再更新）。<br>
     · 浏览器 localStorage 只存解锁后的凭据 + 离线缓存；清缓存后重输 PIN 即可。</p>
   </div>`;
-}
-function applyRanges(){
-  const smin=parseFloat(document.getElementById('sr-smin').value)||0;
-  const smax=parseFloat(document.getElementById('sr-smax').value)||12;
-  const wmin=parseFloat(document.getElementById('sr-wmin').value)||45;
-  const wmax=parseFloat(document.getElementById('sr-wmax').value)||60;
-  if(smax<=smin||wmax<=wmin){toast('最大值必须大于最小值');return}
-  slRanges={sleepMin:smin,sleepMax:smax,wtMin:wmin,wtMax:wmax};
-  LS.set(RANGE_KEY,slRanges);
-  renderToday();toast('✅ 范围已更新');
 }
 function applyCreds(){
   const g=document.getElementById('cg-gid').value.trim();
