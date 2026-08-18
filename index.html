@@ -379,6 +379,11 @@ textarea{resize:vertical;min-height:56px}
   <div id="content">
     <div class="tab-panel active" id="p-today"><div id="today-c"></div></div>
     <div class="tab-panel" id="p-board" data-bt="inprogress">
+      <div class="pills">
+        <button class="pill active" data-bs="board" onclick="setBoardSec('board')">📋 任务</button>
+        <button class="pill" data-bs="rems" onclick="setBoardSec('rems')">📅 提醒</button>
+      </div>
+      <div id="board-wrap">
       <div class="stats-bar" id="statsBar"></div>
       <div class="bpills">
         <button class="bpill" data-bt="todo" onclick="setBoardPill('todo')">⬜ 待办 <span id="bp-cnt-todo">0</span></button>
@@ -402,25 +407,24 @@ textarea{resize:vertical;min-height:56px}
           <button class="add-col-btn" onclick="openAdd('done')">＋ 添加任务</button>
         </div>
       </div>
-    </div>
-    <div class="tab-panel" id="p-logs"><div id="logs-c"></div></div>
-    <div class="tab-panel" id="p-sum"><div id="sum-c"></div></div>
-    <div class="tab-panel" id="p-more">
-      <div class="pills">
-        <button class="pill active" data-mp="lab" onclick="setMorePill('lab')">🧪 检测</button>
-        <button class="pill" data-mp="supps" onclick="setMorePill('supps')">💊 补剂</button>
-        <button class="pill" data-mp="rems" onclick="setMorePill('rems')">📅 提醒</button>
-        <button class="pill" data-mp="settings" onclick="setMorePill('settings')">⚙️ 设置</button>
       </div>
-      <div id="more-c"></div>
+      <div id="rems-wrap" class="hidden"><div id="rems-c"></div></div>
     </div>
+    <div class="tab-panel" id="p-logs">
+      <div class="pills">
+        <button class="pill active" data-ls="logs" onclick="setLogSec('logs')">📖 日志</button>
+        <button class="pill" data-ls="lab" onclick="setLogSec('lab')">🧪 检测</button>
+        <button class="pill" data-ls="supps" onclick="setLogSec('supps')">💊 补剂</button>
+      </div>
+      <div id="logs-c"></div>
+    </div>
+    <div class="tab-panel" id="p-sum"><div id="sum-c"></div></div>
   </div>
   <nav class="tabbar">
     <button class="tab-btn active" data-tab="today" onclick="switchTab('today')"><span class="icon">☀️</span>今日</button>
     <button class="tab-btn" data-tab="board" onclick="switchTab('board')"><span class="icon">📋</span>看板</button>
     <button class="tab-btn" data-tab="logs" onclick="switchTab('logs')"><span class="icon">📖</span>日志</button>
     <button class="tab-btn" data-tab="sum" onclick="switchTab('sum')"><span class="icon">📊</span>总结</button>
-    <button class="tab-btn" data-tab="more" onclick="switchTab('more')"><span class="icon">🧰</span>更多</button>
   </nav>
 </div>
 
@@ -478,7 +482,7 @@ let CREDS=null;
 let data=null;
 let saveTimer=null, lastSavedAt=null, lastFocusReload=0;
 let editId=null, editReminderId=null, tmpSubs=[];
-let curDetId=null, curMorePill='lab';
+let curDetId=null, curBoardSec='board', curLogSec='logs';
 let slRanges=Object.assign({sleepMin:0,sleepMax:12,wtMin:45,wtMax:60},LS.get(RANGE_KEY)||{});
 
 // ── small helpers ──
@@ -662,21 +666,35 @@ function switchTab(n){
   // lazy re-render so panels reflect edits made on other tabs
   if(data){
     if(n==='today')renderToday();
-    else if(n==='board')renderBoard();
-    else if(n==='logs')renderLogs();
+    else if(n==='board')renderBoardTab();
+    else if(n==='logs')renderLogsTab();
     else if(n==='sum')renderSummary();
-    else if(n==='more')renderMore();
   }
 }
 function setBoardPill(s){
   document.getElementById('p-board').dataset.bt=s;
   document.querySelectorAll('.bpill').forEach(b=>b.classList.toggle('active',b.dataset.bt===s));
 }
-function gotoSettings(){switchTab('more');setMorePill('settings')}
-function setMorePill(p){
-  curMorePill=p;
-  document.querySelectorAll('.pill').forEach(b=>b.classList.toggle('active',b.dataset.mp===p));
-  renderMore();
+function gotoSettings(){openSheet('⚙️ 设置',settingsSectionHtml())}
+function setBoardSec(s){
+  curBoardSec=s;
+  document.querySelectorAll('[data-bs]').forEach(b=>b.classList.toggle('active',b.dataset.bs===s));
+  document.getElementById('board-wrap').classList.toggle('hidden',s!=='board');
+  document.getElementById('rems-wrap').classList.toggle('hidden',s!=='rems');
+  if(s==='rems')document.getElementById('rems-c').innerHTML=remsSectionHtml();
+}
+function setLogSec(s){
+  curLogSec=s;
+  document.querySelectorAll('[data-ls]').forEach(b=>b.classList.toggle('active',b.dataset.ls===s));
+  renderLogsTab();
+}
+function renderBoardTab(){
+  renderBoard();
+  if(curBoardSec==='rems'){const c=document.getElementById('rems-c');if(c)c.innerHTML=remsSectionHtml()}
+}
+function renderLogsTab(){
+  if(curLogSec==='logs')renderLogs();
+  else{const c=document.getElementById('logs-c');if(c)c.innerHTML=(curLogSec==='lab'?labSectionHtml():suppsSectionHtml())}
 }
 
 // ══ generic bottom sheet ══
@@ -1685,13 +1703,6 @@ function renderSummary(){
 }
 
 // ══════════════════ 更多（LAB / SUPPS / SETTINGS）══════════════════
-function renderMore(){
-  const c=document.getElementById('more-c');if(!c)return;
-  if(curMorePill==='lab')c.innerHTML=labSectionHtml();
-  else if(curMorePill==='supps')c.innerHTML=suppsSectionHtml();
-  else if(curMorePill==='rems')c.innerHTML=remsSectionHtml();
-  else c.innerHTML=settingsSectionHtml();
-}
 // ── lab ──
 function labSectionHtml(){
   const sorted=[...data.labResults].sort((a,b)=>b.date.localeCompare(a.date));
@@ -1816,7 +1827,7 @@ function settingsSectionHtml(){
     <div class="tr"><span class="tr-l">数据文件</span><span class="tr-v">${HUB_FILE}</span></div>
     <div class="tr"><span class="tr-l">Token</span><span class="tr-v">${esc(maskTok(CREDS.token))}</span></div>
     ${lastSavedAt?`<div class="tr"><span class="tr-l">最近保存</span><span class="tr-v">${lastSavedAt.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</span></div>`:''}
-    <button class="btn btn-s" style="width:100%;margin-top:10px" onclick="reloadFromCloud()">🔄 立即从云端重新加载</button>
+    <button class="btn btn-s" style="width:100%;margin-top:10px" onclick="closeSheet();reloadFromCloud()">🔄 立即从云端重新加载</button>
   </div>
   <div class="card">
     <div class="card-title"><span class="dot" style="background:var(--o)"></span>🔑 凭据</div>
@@ -1839,6 +1850,7 @@ function applyCreds(){
   if(!g){toast('Gist ID 不能为空');return}
   CREDS=Object.assign({},CREDS,{gistId:g},t?{token:t}:{});
   LS.set(CRED_KEY,CREDS);
+  closeSheet();
   toast('✅ 本机凭据已更新，正在重新同步…');
   reloadFromCloud();
 }
@@ -1846,14 +1858,14 @@ function applyCreds(){
 // ══ render all / boot ══
 function renderAll(){
   if(!data)return;
-  renderToday();renderBoard();renderLogs();renderSummary();renderMore();
+  renderToday();renderBoardTab();renderLogsTab();renderSummary();
 }
 async function startApp(){
   document.getElementById('lock').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   try{
     const savedTab=LS.get(TAB_KEY);
-    if(savedTab&&['today','board','logs','sum','more'].includes(savedTab))switchTab(savedTab);
+    if(savedTab&&['today','board','logs','sum'].includes(savedTab))switchTab(savedTab);
   }catch(e){}
   if(loadCache()){ensureShape();renderAll()}
   await reloadFromCloud();
